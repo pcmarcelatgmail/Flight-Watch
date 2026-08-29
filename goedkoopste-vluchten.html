@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Goedkoopste vluchten — vertrekbord</title>
+<link rel="icon" href="data:,">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Archivo:wght@500;600;700;800&display=swap');
+
+  :root{
+    --navy-950:#070c14;
+    --navy-900:#0c1524;
+    --navy-800:#122036;
+    --navy-700:#1a2c47;
+    --line:#25314a;
+    --amber:#ffb703;
+    --amber-dim:#8a6a1f;
+    --off:#e7ecf3;
+    --dim:#8ea0bd;
+    --red:#ff6b6b;
+    --green:#5fe0a0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #101d33 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, #14213a 0%, transparent 55%),
+      var(--navy-950);
+    color:var(--off);
+    font-family:'Archivo', system-ui, sans-serif;
+    min-height:100vh;
+    padding:32px 18px 80px;
+  }
+  .wrap{max-width:880px;margin:0 auto;}
+
+  header.top{margin-bottom:28px;}
+  .eyebrow{
+    font-family:'Space Mono',monospace;
+    color:var(--amber);
+    font-size:12px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:"";width:22px;height:2px;background:var(--amber);display:inline-block;}
+  h1{
+    font-size:clamp(28px,4.5vw,42px);
+    line-height:1.05;
+    margin:10px 0 6px;
+    font-weight:800;
+    letter-spacing:-0.01em;
+  }
+  h1 span{color:var(--amber);}
+  .sub{color:var(--dim);font-size:15px;max-width:60ch;}
+
+  .card{
+    background:linear-gradient(180deg,var(--navy-800),var(--navy-900));
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:24px;
+    margin-bottom:22px;
+    box-shadow:0 20px 40px -20px rgba(0,0,0,.6);
+  }
+  .card h2{
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--dim);
+    margin:0 0 18px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:560px){.grid{grid-template-columns:1fr;}}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field.full{grid-column:1/-1;}
+  label{font-size:12.5px;color:var(--dim);font-weight:600;letter-spacing:.02em;}
+  input,select{
+    background:var(--navy-950);
+    border:1px solid var(--line);
+    color:var(--off);
+    border-radius:8px;
+    padding:11px 12px;
+    font-size:14.5px;
+    font-family:inherit;
+    outline:none;
+    transition:border-color .15s;
+  }
+  input:focus,select:focus{border-color:var(--amber);}
+  input::placeholder{color:#54627e;}
+  .hint{font-size:11.5px;color:#5f6f8c;margin-top:2px;}
+
+  .triptype{display:flex;gap:8px;}
+  .triptype-btn{
+    flex:1;
+    background:var(--navy-950);
+    border:1px solid var(--line);
+    color:var(--dim);
+    border-radius:8px;
+    padding:10px 12px;
+    font-family:inherit;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:border-color .15s, color .15s, background .15s;
+  }
+  .triptype-btn.on{border-color:var(--amber);color:var(--amber);background:rgba(255,183,3,.08);}
+
+  .apikey-row{display:flex;gap:10px;align-items:flex-end;}
+  .apikey-row .field{flex:1;}
+  .remember{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim);margin-top:4px;}
+  .remember input{width:14px;height:14px;padding:0;}
+
+  button.primary{
+    background:var(--amber);
+    color:#1a1200;
+    border:none;
+    border-radius:9px;
+    padding:14px 22px;
+    font-weight:800;
+    font-size:15px;
+    letter-spacing:.01em;
+    cursor:pointer;
+    width:100%;
+    margin-top:20px;
+    transition:transform .1s, box-shadow .15s;
+    box-shadow:0 10px 24px -10px rgba(255,183,3,.5);
+  }
+  button.primary:hover{transform:translateY(-1px);}
+  button.primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  button.primary:active{transform:translateY(0);}
+
+  .advanced{margin-top:16px;border-top:1px dashed var(--line);padding-top:14px;}
+  .advanced summary{cursor:pointer;font-size:12.5px;color:var(--dim);font-weight:600;}
+  .airport-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;}
+  .chip{
+    font-family:'Space Mono',monospace;
+    font-size:11.5px;
+    border:1px solid var(--line);
+    color:var(--dim);
+    padding:5px 9px;
+    border-radius:999px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .chip.on{border-color:var(--amber);color:var(--amber);background:rgba(255,183,3,.08);}
+
+  /* status / progress */
+  #status{
+    font-family:'Space Mono',monospace;
+    font-size:12.5px;
+    color:var(--dim);
+    min-height:18px;
+    margin-top:14px;
+    white-space:pre-wrap;
+  }
+  #status .err{color:var(--red);}
+  .progressbar{height:3px;background:var(--navy-950);border-radius:3px;overflow:hidden;margin-top:8px;display:none;}
+  .progressbar.show{display:block;}
+  .progressbar > i{display:block;height:100%;width:0%;background:var(--amber);transition:width .25s;}
+
+  /* results — split-flap board */
+  #results{margin-top:0;}
+  .board{
+    background:var(--navy-950);
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+  }
+  .board-head{
+    display:grid;
+    grid-template-columns:34px 1.3fr 1fr 90px;
+    gap:10px;
+    padding:12px 16px;
+    font-family:'Space Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:#5f6f8c;
+    border-bottom:1px solid var(--line);
+  }
+  .row{
+    display:grid;
+    grid-template-columns:34px 1.3fr 1fr 90px;
+    gap:10px;
+    align-items:center;
+    padding:16px;
+    border-bottom:1px solid var(--line);
+    animation:flap .4s ease;
+  }
+  .row:last-child{border-bottom:none;}
+  .row:nth-child(1) .price{color:var(--amber);}
+  @keyframes flap{
+    from{opacity:0;transform:translateY(-6px) scaleY(.92);}
+    to{opacity:1;transform:none;}
+  }
+  .rank{
+    font-family:'Space Mono',monospace;
+    color:#5f6f8c;
+    font-size:13px;
+  }
+  .airport{display:flex;flex-direction:column;gap:2px;}
+  .airport .code{
+    font-family:'Space Mono',monospace;
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:.03em;
+  }
+  .airport .city{font-size:12px;color:var(--dim);}
+  .flight-meta{font-size:12px;color:var(--dim);line-height:1.5;}
+  .flight-meta b{color:var(--off);font-weight:600;}
+  .price{
+    font-family:'Space Mono',monospace;
+    font-weight:700;
+    font-size:19px;
+    text-align:right;
+  }
+  .price small{display:block;font-size:10px;color:var(--dim);font-weight:400;text-align:right;}
+
+  .empty-note{
+    padding:22px 16px;color:var(--dim);font-size:13.5px;font-family:'Space Mono',monospace;
+  }
+
+  footer{
+    margin-top:30px;color:#4c5a75;font-size:12px;line-height:1.6;
+  }
+  footer a{color:var(--dim);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="eyebrow">Vertrekbord · continent-scan</div>
+    <h1>Waar vlieg je <span>het goedkoopst</span> vandaan?</h1>
+    <p class="sub">Kies een bestemming, datum, klasse en vertrekcontinent. De app doorzoekt de belangrijkste luchthavens op dat continent via de Sky‑Scrapper (AirScraper) API en toont de 5 goedkoopste.</p>
+  </header>
+
+  <div class="card">
+    <h2>API-sleutel</h2>
+    <div class="apikey-row">
+      <div class="field">
+        <label for="apikey">RapidAPI-key (Sky‑Scrapper / AirScraper)</label>
+        <input id="apikey" type="password" placeholder="bv. 3f9a...">
+      </div>
+    </div>
+    <label class="remember"><input type="checkbox" id="rememberKey"> Onthoud sleutel in deze browser (localStorage)</label>
+    <div class="hint">Je sleutel wordt alleen gebruikt om rechtstreeks vanuit jouw browser naar sky-scrapper.p.rapidapi.com te bellen — hij gaat nergens anders naartoe. Nog geen sleutel? Maak gratis een account op rapidapi.com en abonneer je (gratis BASIC-plan) op "Sky Scrapper".</div>
+  </div>
+
+  <div class="card">
+    <h2>Zoekopdracht</h2>
+    <div class="grid">
+      <div class="field full">
+        <label for="destination">Bestemming (luchthaven of stad)</label>
+        <input id="destination" type="text" placeholder="bv. Bangkok, of BKK">
+      </div>
+      <div class="field full">
+        <label>Type reis</label>
+        <div class="triptype" id="tripType">
+          <button type="button" class="triptype-btn on" data-value="oneway">Enkele reis</button>
+          <button type="button" class="triptype-btn" data-value="return">Retour</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="date">Vertrekdatum</label>
+        <input id="date" type="date">
+      </div>
+      <div class="field" id="returnDateField" style="display:none;">
+        <label for="returnDate">Retourdatum</label>
+        <input id="returnDate" type="date">
+      </div>
+      <div class="field">
+        <label for="cabin">Reisklasse</label>
+        <select id="cabin">
+          <option value="economy">Economy</option>
+          <option value="premium_economy">Premium Economy</option>
+          <option value="business">Business</option>
+          <option value="first">First</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label for="continent">Vertrekcontinent</label>
+        <select id="continent"></select>
+      </div>
+    </div>
+
+    <details class="advanced" id="advancedBlock">
+      <summary>Luchthavens die doorzocht worden op dit continent (klik om aan/uit te zetten)</summary>
+      <div class="airport-chips" id="chips"></div>
+      <div class="hint" style="margin-top:10px;">Elke luchthaven kost minimaal 1 API-call (soms 2, als de luchthaven nog niet eerder is opgezocht). De gratis BASIC-plan van RapidAPI geeft je 100 calls/maand — zet minder luchthavens aan als je die limiet wil sparen.</div>
+    </details>
+
+    <button class="primary" id="searchBtn">Zoek de 5 goedkoopste luchthavens</button>
+    <div class="progressbar" id="progressbar"><i id="progressbarInner"></i></div>
+    <div id="status"></div>
+  </div>
+
+  <div id="results"></div>
+
+  <footer>
+    Gebouwd rond de <a href="https://rapidapi.com/apiheya/api/sky-scrapper" target="_blank" rel="noopener">Sky‑Scrapper (AirScraper) API</a> op RapidAPI. Prijzen komen rechtstreeks van de API en kunnen afwijken van de uiteindelijke boekingsprijs. Deze pagina slaat verder niets op of door buiten je eigen browser.
+  </footer>
+</div>
+
+<script>
+const HOST = "sky-scrapper.p.rapidapi.com";
+
+// Belangrijkste luchthavens per continent (IATA-code + stad)
+const CONTINENTS = {
+  "Europa": [
+    ["LHR","Londen"], ["CDG","Parijs"], ["AMS","Amsterdam"], ["FRA","Frankfurt"],
+    ["MAD","Madrid"], ["FCO","Rome"], ["IST","Istanbul"], ["MUC","München"], ["OSL","Oslo"]
+  ],
+  "Noord-Amerika": [
+    ["JFK","New York"], ["LAX","Los Angeles"], ["ORD","Chicago"], ["YYZ","Toronto"],
+    ["ATL","Atlanta"], ["MEX","Mexico-Stad"], ["MIA","Miami"], ["SFO","San Francisco"]
+  ],
+  "Zuid-Amerika": [
+    ["GRU","São Paulo"], ["EZE","Buenos Aires"], ["BOG","Bogotá"], ["LIM","Lima"],
+    ["SCL","Santiago"], ["GIG","Rio de Janeiro"]
+  ],
+  "Azië": [
+    ["HND","Tokio"], ["ICN","Seoul"], ["SIN","Singapore"], ["BKK","Bangkok"],
+    ["DXB","Dubai"], ["HKG","Hongkong"], ["PEK","Peking"], ["DEL","New Delhi"]
+  ],
+  "Afrika": [
+    ["JNB","Johannesburg"], ["CAI","Caïro"], ["CPT","Kaapstad"], ["NBO","Nairobi"],
+    ["LOS","Lagos"], ["ADD","Addis Abeba"]
+  ],
+  "Oceanië": [
+    ["SYD","Sydney"], ["MEL","Melbourne"], ["AKL","Auckland"], ["BNE","Brisbane"], ["PER","Perth"]
+  ]
+};
+
+const continentSel = document.getElementById('continent');
+const chipsBox = document.getElementById('chips');
+const statusEl = document.getElementById('status');
+const progressbar = document.getElementById('progressbar');
+const progressbarInner = document.getElementById('progressbarInner');
+const resultsEl = document.getElementById('results');
+const apikeyInput = document.getElementById('apikey');
+const rememberBox = document.getElementById('rememberKey');
+
+// laad opgeslagen key
+const savedKey = localStorage.getItem('sky_rapidapi_key');
+if (savedKey) { apikeyInput.value = savedKey; rememberBox.checked = true; }
+rememberBox.addEventListener('change', () => {
+  if (!rememberBox.checked) localStorage.removeItem('sky_rapidapi_key');
+});
+
+// datum default = vandaag
+const todayISO = new Date().toISOString().slice(0,10);
+document.getElementById('date').valueAsDate = new Date();
+document.getElementById('date').min = todayISO;
+
+const returnDateInput = document.getElementById('returnDate');
+const returnDateField = document.getElementById('returnDateField');
+const oneWeekLater = new Date();
+oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+returnDateInput.valueAsDate = oneWeekLater;
+returnDateInput.min = todayISO;
+
+let tripType = 'oneway';
+document.querySelectorAll('.triptype-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.triptype-btn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    tripType = btn.dataset.value;
+    returnDateField.style.display = tripType === 'return' ? 'flex' : 'none';
+  });
+});
+
+// vertrekdatum verzet ook de minimale retourdatum mee
+document.getElementById('date').addEventListener('change', (e) => {
+  returnDateInput.min = e.target.value || todayISO;
+  if (returnDateInput.value && returnDateInput.value < returnDateInput.min) {
+    returnDateInput.value = returnDateInput.min;
+  }
+});
+
+// continent-dropdown vullen
+Object.keys(CONTINENTS).forEach(name => {
+  const o = document.createElement('option');
+  o.value = name; o.textContent = name;
+  continentSel.appendChild(o);
+});
+continentSel.value = "Europa";
+
+let activeAirports = new Set();
+function renderChips() {
+  chipsBox.innerHTML = '';
+  activeAirports = new Set(CONTINENTS[continentSel.value].map(a => a[0]));
+  CONTINENTS[continentSel.value].forEach(([code, city]) => {
+    const chip = document.createElement('div');
+    chip.className = 'chip on';
+    chip.textContent = `${code} · ${city}`;
+    chip.dataset.code = code;
+    chip.addEventListener('click', () => {
+      if (activeAirports.has(code)) { activeAirports.delete(code); chip.classList.remove('on'); }
+      else { activeAirports.add(code); chip.classList.add('on'); }
+    });
+    chipsBox.appendChild(chip);
+  });
+}
+continentSel.addEventListener('change', renderChips);
+renderChips();
+
+function setStatus(msg, isErr=false) {
+  statusEl.innerHTML = isErr ? `<span class="err">${msg}</span>` : msg;
+}
+function setProgress(pct) {
+  if (pct === null) { progressbar.classList.remove('show'); return; }
+  progressbar.classList.add('show');
+  progressbarInner.style.width = pct + '%';
+}
+
+const airportCache = new Map(); // query -> {skyId, entityId, name}
+
+async function apiGet(path, params) {
+  const key = apikeyInput.value.trim();
+  if (!key) throw new Error('Vul eerst je RapidAPI-sleutel in.');
+  const url = new URL(`https://${HOST}${path}`);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  const res = await fetch(url, {
+    headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': HOST }
+  });
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.text()).slice(0,200); } catch(e){}
+    throw new Error(`API gaf status ${res.status} terug voor ${path}. ${detail}`);
+  }
+  return res.json();
+}
+
+async function resolveAirport(query) {
+  if (airportCache.has(query)) return airportCache.get(query);
+  const json = await apiGet('/api/v1/flights/searchAirport', { query, locale: 'en-US' });
+  const list = json?.data || [];
+  if (!list.length) {
+    throw new Error(`Geen luchthaven gevonden voor "${query}". Probeer de volledige stad- of luchthavennaam in plaats van de code.`);
+  }
+  const codeOf = (e) => (e.navigation?.relevantFlightParams?.skyId || e.skyId || '').toUpperCase();
+  const typeOf = (e) => e.navigation?.relevantFlightParams?.flightPlaceType || e.navigation?.entityType;
+  const q = query.trim().toUpperCase();
+
+  // 1) exacte match op IATA/sky-code, 2) eerste entry van het type AIRPORT, 3) anders de eerste suggestie
+  let best =
+    list.find(e => codeOf(e) === q) ||
+    list.find(e => typeOf(e) === 'AIRPORT') ||
+    list[0];
+
+  const resolved = {
+    skyId: best.skyId || best.navigation?.relevantFlightParams?.skyId,
+    entityId: best.entityId || best.navigation?.entityId,
+    name: best.presentation?.suggestionTitle || best.presentation?.title || query
+  };
+  if (!resolved.skyId || !resolved.entityId) {
+    throw new Error(`Kon geen bruikbare luchthavengegevens ophalen voor "${query}".`);
+  }
+  airportCache.set(query, resolved);
+  return resolved;
+}
+
+function cheapestItinerary(itineraries) {
+  if (!itineraries || !itineraries.length) return null;
+  let best = null;
+  for (const it of itineraries) {
+    const raw = it?.price?.raw;
+    if (typeof raw === 'number' && (best === null || raw < best.price.raw)) best = it;
+  }
+  return best;
+}
+
+async function searchOneOrigin(originQuery, cityName, destResolved, date, cabin, returnDate) {
+  const origin = await resolveAirport(originQuery);
+  const params = {
+    originSkyId: origin.skyId,
+    destinationSkyId: destResolved.skyId,
+    originEntityId: origin.entityId,
+    destinationEntityId: destResolved.entityId,
+    date,
+    cabinClass: cabin,
+    adults: 1,
+    currency: 'EUR',
+    market: 'nl-NL',
+    countryCode: 'NL'
+  };
+  if (returnDate) params.returnDate = returnDate;
+  const json = await apiGet('/api/v1/flights/searchFlights', params);
+  const itins = json?.data?.itineraries;
+  const best = cheapestItinerary(itins);
+  if (!best) return { code: originQuery, city: cityName, price: null };
+  const leg = best.legs?.[0];
+  return {
+    code: originQuery,
+    city: cityName,
+    price: best.price.raw,
+    priceFormatted: best.price.formatted,
+    airline: leg?.carriers?.marketing?.[0]?.name || '—',
+    stops: leg?.stopCount ?? '—',
+    duration: leg?.durationInMinutes,
+    depart: leg?.departure
+  };
+}
+
+function fmtDuration(mins) {
+  if (mins == null) return '';
+  const h = Math.floor(mins/60), m = mins%60;
+  return `${h}u${m ? ' '+m+'m' : ''}`;
+}
+
+function renderResults(list, destinationLabel, tripTypeUsed) {
+  const ok = list.filter(r => r.price !== null).sort((a,b) => a.price - b.price).slice(0,5);
+  const failed = list.filter(r => r.price === null);
+
+  if (!ok.length) {
+    resultsEl.innerHTML = `<div class="board"><div class="empty-note">Geen prijzen gevonden voor deze combinatie van luchthavens, datum en klasse. Probeer een andere datum of klasse.</div></div>`;
+    return;
+  }
+
+  let rows = ok.map((r, i) => `
+    <div class="row">
+      <div class="rank">${String(i+1).padStart(2,'0')}</div>
+      <div class="airport">
+        <span class="code">${r.code}</span>
+        <span class="city">${r.city}</span>
+      </div>
+      <div class="flight-meta"><b>${r.airline}</b><br>${r.stops === 0 ? 'Direct' : r.stops + ' tussenstop(s)'} · ${fmtDuration(r.duration)}</div>
+      <div class="price">${r.priceFormatted || r.price}<small>${tripTypeUsed === 'return' ? 'retour' : 'enkele reis'} naar ${destinationLabel}</small></div>
+    </div>`).join('');
+
+  let note = '';
+  if (failed.length) {
+    note = `<div class="empty-note">Geen resultaat voor: ${failed.map(f=>f.code).join(', ')}.</div>`;
+  }
+
+  resultsEl.innerHTML = `
+    <div class="board">
+      <div class="board-head"><span>#</span><span>Luchthaven</span><span>Vlucht</span><span style="text-align:right">Prijs</span></div>
+      ${rows}
+    </div>
+    ${note}`;
+}
+
+document.getElementById('searchBtn').addEventListener('click', async () => {
+  resultsEl.innerHTML = '';
+  const destQuery = document.getElementById('destination').value.trim();
+  const date = document.getElementById('date').value;
+  const returnDate = tripType === 'return' ? document.getElementById('returnDate').value : null;
+  const cabin = document.getElementById('cabin').value;
+  const continent = continentSel.value;
+  const airports = CONTINENTS[continent].filter(([code]) => activeAirports.has(code));
+
+  if (!destQuery) { setStatus('Vul een bestemming in.', true); return; }
+  if (!date) { setStatus('Kies een datum.', true); return; }
+  if (tripType === 'return' && !returnDate) { setStatus('Kies een retourdatum, of schakel over naar enkele reis.', true); return; }
+  if (tripType === 'return' && returnDate < date) { setStatus('De retourdatum kan niet vóór de vertrekdatum liggen.', true); return; }
+  if (!airports.length) { setStatus('Zet minstens één luchthaven aan.', true); return; }
+  if (rememberBox.checked && apikeyInput.value.trim()) {
+    localStorage.setItem('sky_rapidapi_key', apikeyInput.value.trim());
+  }
+
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  setProgress(0);
+
+  try {
+    setStatus(`Bestemming "${destQuery}" opzoeken...`);
+    const dest = await resolveAirport(destQuery);
+
+    const results = [];
+    for (let i = 0; i < airports.length; i++) {
+      const [code, city] = airports[i];
+      setStatus(`Prijzen ophalen: ${city} (${code}) → ${dest.name}  [${i+1}/${airports.length}]`);
+      setProgress(Math.round((i / airports.length) * 100));
+      try {
+        const r = await searchOneOrigin(code, city, dest, date, cabin, returnDate);
+        results.push(r);
+      } catch (e) {
+        results.push({ code, city, price: null });
+        console.warn(`Fout bij ${code}:`, e.message);
+      }
+    }
+    setProgress(100);
+    setStatus(`Klaar. ${results.filter(r=>r.price!==null).length}/${airports.length} luchthavens gaven een prijs.`);
+    renderResults(results, dest.name || destQuery, tripType);
+  } catch (e) {
+    setStatus(e.message, true);
+  } finally {
+    btn.disabled = false;
+    setTimeout(() => setProgress(null), 600);
+  }
+});
+</script>
+</body>
+</html>
