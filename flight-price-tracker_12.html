@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flight watch</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#E4F1FB;
+    --panel:#FFFFFF;
+    --panel-2:#F4FAFF;
+    --board-line:#C6DFF2;
+    --amber:#B9790C;
+    --amber-dim:#E8C98A;
+    --text:#122B40;
+    --text-dim:#5B7D95;
+    --teal:#0D9C87;
+    --teal-dim:#DAF3EE;
+    --coral:#D14336;
+    --coral-dim:#FBE2DF;
+    --border:#C6DFF2;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    padding:40px 20px 80px;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+
+  header{margin-bottom:36px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.14em;
+    color:var(--amber);
+    text-transform:uppercase;
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:38px;
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    color:var(--text-dim);
+    font-size:15px;
+    max-width:560px;
+    line-height:1.6;
+    margin:0;
+  }
+
+  .board{
+    background:var(--panel);
+    border:1px solid var(--board-line);
+    border-radius:10px;
+    padding:6px;
+  }
+  .board-head{
+    display:grid;
+    grid-template-columns: 1.8fr 1.8fr 1.3fr 1.3fr 1.3fr 1.6fr 32px;
+    gap:8px;
+    padding:12px 14px 10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+
+  .row{
+    background:var(--panel-2);
+    border:1px solid var(--board-line);
+    border-radius:8px;
+    margin:6px;
+    overflow:hidden;
+  }
+  .row-top{
+    display:grid;
+    grid-template-columns: 1.8fr 1.8fr 1.3fr 1.3fr 1.3fr 1.6fr 32px;
+    gap:8px;
+    align-items:center;
+    padding:12px 14px;
+  }
+  .field label{display:none;}
+  input[type=text], input[type=date]{
+    width:100%;
+    background:var(--panel);
+    border:1px solid var(--board-line);
+    color:var(--text);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    letter-spacing:.05em;
+    border-radius:6px;
+    padding:9px 10px;
+    outline:none;
+  }
+  input[type=text]::placeholder{color:var(--text-dim);font-family:'Inter',sans-serif;letter-spacing:0;}
+  input[type=text]:focus, input[type=date]:focus{border-color:var(--amber);}
+  input[type=text]{text-transform:uppercase;}
+  input[type=date]{color-scheme:dark;}
+
+  select.cabin-select{
+    width:100%;
+    background:var(--panel);
+    border:1px solid var(--board-line);
+    color:var(--text);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    letter-spacing:.03em;
+    border-radius:6px;
+    padding:9px 8px;
+    outline:none;
+    cursor:pointer;
+  }
+  select.cabin-select:focus{border-color:var(--amber);}
+
+  .time-filter-row{
+    display:flex;
+    gap:4px;
+  }
+  .time-filter-row select.cabin-select{
+    flex:1;
+    min-width:0;
+  }
+  .time-value-input{
+    flex:1;
+    min-width:0;
+    padding:9px 6px;
+  }
+  .time-value-input:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+  }
+
+  .cabin-tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:20px;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+  }
+
+  .row-options{
+    padding:0 14px 12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .nonstop-toggle{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.04em;
+    color:var(--text-dim);
+    cursor:pointer;
+    user-select:none;
+  }
+  .nonstop-toggle input{
+    accent-color:var(--amber);
+    width:15px;
+    height:15px;
+    cursor:pointer;
+  }
+
+  .note-input{
+    flex:1;
+    min-width:140px;
+    background:var(--panel);
+    border:1px solid var(--board-line);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    border-radius:6px;
+    padding:6px 10px;
+    outline:none;
+  }
+  .note-input::placeholder{color:var(--text-dim);}
+  .note-input:focus{border-color:var(--amber);}
+
+  .extra-check{
+    border-top:1px dashed var(--board-line);
+    margin-top:12px;
+    padding-top:10px;
+    font-size:12px;
+  }
+  .extra-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin-bottom:5px;
+  }
+  .extra-content{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .extra-left{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    color:var(--text-dim);
+    font-size:12px;
+  }
+  .extra-price{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:15px;
+    color:var(--amber);
+  }
+
+  .airport-pair{display:flex;align-items:center;gap:8px;}
+  .swap-btn{
+    background:none;border:none;color:var(--text-dim);cursor:pointer;
+    font-size:15px;padding:2px 4px;line-height:1;flex:none;
+  }
+  .swap-btn:hover{color:var(--amber);}
+
+  .airport-hint{
+    font-size:11px;
+    color:var(--text-dim);
+    margin-top:4px;
+    min-height:14px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .airport-hint.unknown{color:var(--coral);opacity:.7;}
+
+  .search-btn{
+    background:transparent;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    border-radius:6px;
+    padding:9px 4px;
+    cursor:pointer;
+    width:100%;
+  }
+  .search-btn:hover{border-color:var(--amber);background:rgba(255,182,39,0.06);}
+  .search-btn:disabled{opacity:.5;cursor:default;}
+
+  .remove-btn{
+    background:none;border:none;color:var(--text-dim);
+    font-size:18px;cursor:pointer;line-height:1;
+    width:100%;
+  }
+  .remove-btn:hover{color:var(--coral);}
+
+  .result{
+    border-top:1px solid var(--board-line);
+    padding:14px 16px;
+    display:none;
+  }
+  .result.show{display:block;}
+  .result.pending .r-content{opacity:.35;}
+
+  .status-line{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin-bottom:10px;
+  }
+  .status-line.searching{color:var(--amber);}
+
+  .r-content{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .r-left{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .airline{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;}
+  .flight-meta{font-size:13px;color:var(--text-dim);}
+  .stops-badge{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:20px;
+    border:1px solid var(--board-line);
+    color:var(--text-dim);
+  }
+
+  .price-flap{
+    perspective:400px;
+  }
+  .price-inner{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:26px;
+    color:var(--amber);
+    display:inline-block;
+    transform-origin:center;
+  }
+  @keyframes flip{
+    0%{transform:rotateX(0deg);opacity:1;}
+    45%{transform:rotateX(90deg);opacity:.2;}
+    55%{transform:rotateX(90deg);opacity:.2;}
+    100%{transform:rotateX(0deg);opacity:1;}
+  }
+  .flipping{animation:flip .5s ease;}
+
+  .delta{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    padding:3px 8px;
+    border-radius:6px;
+    margin-left:8px;
+  }
+  .delta.down{color:var(--teal);background:var(--teal-dim);}
+  .delta.up{color:var(--coral);background:var(--coral-dim);}
+  .delta.flat{color:var(--text-dim);background:var(--panel);}
+
+  .history{
+    margin-top:10px;
+    display:flex;
+    gap:5px;
+    align-items:flex-end;
+    height:24px;
+  }
+  .history .bar{
+    width:6px;
+    background:var(--amber-dim);
+    border-radius:2px 2px 0 0;
+  }
+  .history .bar:last-child{background:var(--amber);}
+
+  .check-btn{
+    background:none;
+    border:1px solid var(--board-line);
+    color:var(--text-dim);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    border-radius:6px;
+    padding:8px 12px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .check-btn:hover{color:var(--amber);border-color:var(--amber-dim);}
+
+  .add-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin:14px 6px 6px;
+    padding:14px;
+    border:1px dashed var(--board-line);
+    border-radius:8px;
+    color:var(--text-dim);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    cursor:pointer;
+    background:none;
+    width:calc(100% - 12px);
+  }
+  .add-row:hover{color:var(--amber);border-color:var(--amber-dim);}
+  .add-row:disabled{opacity:.4;cursor:default;}
+
+  .footnote{
+    text-align:center;
+    color:var(--text-dim);
+    font-size:12px;
+    margin-top:16px;
+    font-family:'IBM Plex Mono',monospace;
+    letter-spacing:.04em;
+  }
+
+  .api-panel{
+    background:var(--panel);
+    border:1px solid var(--board-line);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:16px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .api-panel input[type=password]{
+    flex:1;
+    min-width:220px;
+    background:var(--panel-2);
+    border:1px solid var(--board-line);
+    color:var(--text);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    border-radius:6px;
+    padding:9px 10px;
+    outline:none;
+  }
+  .api-panel input:focus{border-color:var(--amber);}
+  .api-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    white-space:nowrap;
+  }
+  .api-status{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.06em;
+    padding:4px 10px;
+    border-radius:20px;
+    border:1px solid var(--board-line);
+    color:var(--text-dim);
+    white-space:nowrap;
+  }
+  .api-status.live{color:var(--teal);border-color:var(--teal-dim);}
+  .api-note{
+    width:100%;
+    font-size:12px;
+    color:var(--text-dim);
+    line-height:1.5;
+  }
+  .status-line.error{color:var(--coral);}
+
+  @media (max-width:640px){
+    .board-head{display:none;}
+    .row-top{grid-template-columns:1fr 1fr;grid-template-areas:"from to" "date cabin" "time time" "search remove";}
+    .field.from{grid-area:from;}
+    .field.to{grid-area:to;}
+    .field.date{grid-area:date;}
+    .field.cabin{grid-area:cabin;}
+    .field.timewindow{grid-area:time;}
+    .search-btn{grid-area:search;}
+    .remove-btn{grid-area:remove;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Departures &middot; live watch</p>
+    <h1>Flight watch</h1>
+    <p>Set up to six routes, choose economy or business, run a search, and keep an eye on how the price moves each time you check back.</p>
+  </header>
+
+  <div class="api-panel">
+    <span class="api-label">Air Scraper API key</span>
+    <input type="password" id="apiKeyInput" placeholder="Paste your X-RapidAPI-Key">
+    <span class="api-status" id="apiStatus">Demo mode</span>
+    <span class="api-label" style="margin-left:6px;">Market</span>
+    <select class="cabin-select" id="marketSelect" style="width:auto;min-width:170px;">
+      <option value="en-GB|GB">United Kingdom (en-GB)</option>
+      <option value="en-US|US">United States (en-US)</option>
+      <option value="zh-CN|CN">China (zh-CN)</option>
+      <option value="ja-JP|JP">Japan (ja-JP)</option>
+      <option value="de-DE|DE">Germany (de-DE)</option>
+    </select>
+    <button class="check-btn" id="clearSavedBtn" type="button">Clear saved data</button>
+    <p class="api-note">Saved in this browser only (not sent anywhere else) so you won't need to re-enter your key or routes next time. Use "Clear saved data" to remove it. Switching Market can surface different carriers/fares for regional routes (e.g. try China for domestic Chinese routes).</p>
+  </div>
+
+  <div class="board">
+    <div class="board-head">
+      <div>From</div>
+      <div>To</div>
+      <div>Date</div>
+      <div>Cabin</div>
+      <div>Time</div>
+      <div>Best flight</div>
+      <div></div>
+    </div>
+    <div id="rows"></div>
+    <button class="add-row" id="addRowBtn">+ Add flight</button>
+  </div>
+
+  <p class="footnote" id="footnote">1 of 5 flights &middot; demo data, not live prices</p>
+</div>
+
+<datalist id="airports">
+  <option value="AMS">Amsterdam Schiphol</option>
+  <option value="LHR">London Heathrow</option>
+  <option value="LGW">London Gatwick</option>
+  <option value="CDG">Paris Charles de Gaulle</option>
+  <option value="FRA">Frankfurt</option>
+  <option value="MAD">Madrid Barajas</option>
+  <option value="BCN">Barcelona El Prat</option>
+  <option value="FCO">Rome Fiumicino</option>
+  <option value="MXP">Milan Malpensa</option>
+  <option value="MUC">Munich</option>
+  <option value="ZRH">Zurich</option>
+  <option value="VIE">Vienna</option>
+  <option value="CPH">Copenhagen</option>
+  <option value="ARN">Stockholm Arlanda</option>
+  <option value="OSL">Oslo Gardermoen</option>
+  <option value="DUB">Dublin</option>
+  <option value="LIS">Lisbon</option>
+  <option value="ATH">Athens</option>
+  <option value="IST">Istanbul</option>
+  <option value="JFK">New York JFK</option>
+  <option value="EWR">Newark</option>
+  <option value="LAX">Los Angeles</option>
+  <option value="ORD">Chicago O'Hare</option>
+  <option value="SFO">San Francisco</option>
+  <option value="DXB">Dubai</option>
+  <option value="SIN">Singapore Changi</option>
+  <option value="HKG">Hong Kong</option>
+  <option value="NRT">Tokyo Narita</option>
+  <option value="BKK">Bangkok</option>
+  <option value="SYD">Sydney</option>
+</datalist>
+
+<script>
+const MAX_FLIGHTS = 6;
+const AIRLINES = ["KLM","Lufthansa","Air France","British Airways","easyJet","Ryanair","Delta","United","Turkish Airlines","Vueling","Transavia","Iberia","SWISS","Finnair","TAP Air Portugal"];
+const API_HOST = "sky-scrapper.p.rapidapi.com";
+const airportCache = {};
+let apiKey = "";
+let currentMarket = "en-GB";
+let currentCountry = "GB";
+
+const LS_KEY_APIKEY = "flightwatch_apikey";
+const LS_KEY_FLIGHTS = "flightwatch_flights";
+const LS_KEY_MARKET = "flightwatch_market";
+let storageAvailable = true;
+try {
+  localStorage.setItem("__flightwatch_test__", "1");
+  localStorage.removeItem("__flightwatch_test__");
+} catch (e) {
+  storageAvailable = false;
+}
+
+function saveApiKey(){
+  if (!storageAvailable) return;
+  try { localStorage.setItem(LS_KEY_APIKEY, apiKey); } catch(e) {}
+}
+
+function saveMarket(){
+  if (!storageAvailable) return;
+  try { localStorage.setItem(LS_KEY_MARKET, currentMarket + "|" + currentCountry); } catch(e) {}
+}
+
+function saveFlights(){
+  if (!storageAvailable) return;
+  try {
+    const toSave = flights.map(f => ({
+      from: f.from, to: f.to, date: f.date, cabin: f.cabin, timeMode: f.timeMode, timeValue: f.timeValue, nonstopOnly: !!f.nonstopOnly, note: f.note || "",
+      result: f.result, history: f.history || [],
+      status: f.status === "found" ? "found" : "idle"
+    }));
+    localStorage.setItem(LS_KEY_FLIGHTS, JSON.stringify(toSave));
+  } catch(e) {}
+}
+
+function loadSavedState(){
+  if (!storageAvailable) return;
+  try {
+    const savedKey = localStorage.getItem(LS_KEY_APIKEY);
+    if (savedKey) {
+      apiKey = savedKey;
+      const input = document.getElementById("apiKeyInput");
+      if (input) input.value = savedKey;
+      const statusEl = document.getElementById("apiStatus");
+      if (statusEl) { statusEl.textContent = "Live (Air Scraper)"; statusEl.classList.add("live"); }
+    }
+    const savedMarket = localStorage.getItem(LS_KEY_MARKET);
+    if (savedMarket) {
+      const [m, c] = savedMarket.split("|");
+      if (m && c) {
+        currentMarket = m;
+        currentCountry = c;
+        const sel = document.getElementById("marketSelect");
+        if (sel) sel.value = m + "|" + c;
+      }
+    }
+    const savedFlights = localStorage.getItem(LS_KEY_FLIGHTS);
+    if (savedFlights) {
+      const parsed = JSON.parse(savedFlights);
+      if (Array.isArray(parsed) && parsed.length) {
+        flights = parsed.slice(0, MAX_FLIGHTS).map(f => ({
+          id: cryptoId(),
+          from: f.from || "", to: f.to || "", date: f.date || "",
+          cabin: f.cabin || "economy", timeMode: f.timeMode || "any", timeValue: f.timeValue || "12:00", nonstopOnly: !!f.nonstopOnly, note: f.note || "",
+          result: f.result || null, history: f.history || [],
+          status: f.result ? "found" : "idle"
+        }));
+      }
+    }
+  } catch(e) {}
+}
+
+const AIRPORT_NAMES = {};
+document.querySelectorAll('#airports option').forEach(opt => {
+  AIRPORT_NAMES[opt.value.toUpperCase()] = opt.textContent.trim();
+});
+
+function airportHintText(code){
+  const key = (code || "").toUpperCase();
+  if (key.length !== 3) return "";
+  if (AIRPORT_NAMES[key]) return AIRPORT_NAMES[key];
+  if (airportCache[key] && airportCache[key].name) return airportCache[key].name;
+  if (!apiKey) return "Not in the built-in list \u2014 add an API key above to look it up";
+  return "";
+}
+
+function updateAirportHintDOM(id, role){
+  const f = flights.find(x=>x.id===id);
+  if (!f) return;
+  const el = document.getElementById("hint-" + role + "-" + id);
+  if (!el) return;
+  el.textContent = airportHintText(f[role]);
+}
+
+let flights = [
+  { id: cryptoId(), from:"AMS", to:"", date:"", cabin:"economy", timeMode:"any", timeValue:"12:00", nonstopOnly:false, note:"", result:null, status:"idle", history:[] }
+];
+
+document.getElementById("apiKeyInput").addEventListener("input", e=>{
+  apiKey = e.target.value.trim();
+  const statusEl = document.getElementById("apiStatus");
+  if (apiKey){
+    statusEl.textContent = "Live (Air Scraper)";
+    statusEl.classList.add("live");
+  } else {
+    statusEl.textContent = "Demo mode";
+    statusEl.classList.remove("live");
+  }
+  saveApiKey();
+  render();
+});
+
+document.getElementById("apiKeyInput").addEventListener("blur", ()=>{
+  if (!apiKey) return;
+  flights.forEach(f => {
+    ["from","to"].forEach(async role => {
+      const code = f[role];
+      if (code.length === 3 && !airportHintText(code)){
+        try { await resolveAirport(code); updateAirportHintDOM(f.id, role); }
+        catch(err) {
+          const hintEl = document.getElementById("hint-" + role + "-" + f.id);
+          if (hintEl) hintEl.textContent = "Unrecognized code";
+        }
+      }
+    });
+  });
+});
+
+document.getElementById("marketSelect").addEventListener("change", e=>{
+  const [m, c] = e.target.value.split("|");
+  currentMarket = m;
+  currentCountry = c;
+  saveMarket();
+});
+
+document.getElementById("clearSavedBtn").addEventListener("click", ()=>{
+  if (storageAvailable){
+    try {
+      localStorage.removeItem(LS_KEY_APIKEY);
+      localStorage.removeItem(LS_KEY_FLIGHTS);
+      localStorage.removeItem(LS_KEY_MARKET);
+    } catch(e) {}
+  }
+  apiKey = "";
+  document.getElementById("apiKeyInput").value = "";
+  const statusEl = document.getElementById("apiStatus");
+  statusEl.textContent = "Demo mode";
+  statusEl.classList.remove("live");
+  currentMarket = "en-GB";
+  currentCountry = "GB";
+  document.getElementById("marketSelect").value = "en-GB|GB";
+  flights = [{ id: cryptoId(), from:"", to:"", date:"", cabin:"economy", timeMode:"any", timeValue:"12:00", nonstopOnly:false, note:"", result:null, status:"idle", history:[] }];
+  render();
+});
+
+async function skyFetch(path, params){
+  const url = new URL("https://" + API_HOST + path);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+
+  let res;
+  try {
+    res = await fetch(url, {
+      headers: {
+        "X-RapidAPI-Key": apiKey,
+        "X-RapidAPI-Host": API_HOST
+      }
+    });
+  } catch (networkErr) {
+    console.error("Air Scraper network/CORS error:", networkErr, url.toString());
+    throw new Error("Network/CORS error \u2014 the browser blocked or couldn't complete the request. Check the console for details.");
+  }
+
+  if (!res.ok) {
+    let bodyText = "";
+    try { bodyText = await res.text(); } catch(e) {}
+    console.error("Air Scraper API error", res.status, bodyText, url.toString());
+    let hint = "";
+    if (res.status === 401 || res.status === 403) hint = " \u2014 check your key is subscribed to this exact API on RapidAPI";
+    if (res.status === 429) hint = " \u2014 rate limited (too many requests too fast, or monthly quota used) \u2014 wait a moment and try again";
+    throw new Error("API request failed (" + res.status + ")" + hint + (bodyText ? ": " + bodyText.slice(0,150) : ""));
+  }
+  return res.json();
+}
+
+async function resolveAirport(code){
+  const key = code.toUpperCase();
+  if (airportCache[key]) return airportCache[key];
+  const json = await skyFetch("/api/v1/flights/searchAirport", { query: key, locale: "en-US" });
+  const list = (json && json.data) || [];
+
+  const params = e => e && e.navigation && e.navigation.relevantFlightParams;
+  let entry = list.find(e => {
+    const p = params(e);
+    return p && (p.skyId || "").toUpperCase() === key && e.navigation.entityType === "AIRPORT";
+  });
+  if (!entry) entry = list.find(e => { const p = params(e); return p && (p.skyId || "").toUpperCase() === key; });
+  if (!entry) entry = list[0];
+
+  const p = params(entry);
+  if (!entry || !p || !p.skyId) throw new Error("Airport " + key + " not found");
+
+  const name = (entry.presentation && entry.presentation.suggestionTitle) || p.localizedName || key;
+  const resolved = { skyId: p.skyId, entityId: p.entityId, name };
+  airportCache[key] = resolved;
+  return resolved;
+}
+
+function minutesToDuration(mins){
+  if (mins == null) return "";
+  const h = Math.floor(mins/60);
+  const m = mins%60;
+  return h + "h " + String(m).padStart(2,"0") + "m";
+}
+
+function timeFromISO(iso){
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+}
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+async function fetchSearchFlights(origin, destination, date, cabin){
+  return skyFetch("/api/v1/flights/searchFlights", {
+    originSkyId: origin.skyId,
+    destinationSkyId: destination.skyId,
+    originEntityId: origin.entityId,
+    destinationEntityId: destination.entityId,
+    date: date,
+    adults: "1",
+    cabinClass: cabin,
+    currency: "EUR",
+    market: currentMarket,
+    countryCode: currentCountry
+  });
+}
+
+function isIncomplete(json){
+  const ctxStatus = json && json.data && json.data.context && json.data.context.status;
+  return ctxStatus === "incomplete";
+}
+
+function matchesFilters(itinerary, timeMode, timeValue, nonstopOnly){
+  const leg = itinerary.legs && itinerary.legs[0];
+  if (!leg) return false;
+  if (nonstopOnly && leg.stopCount !== 0) return false;
+  if (timeMode && timeMode !== "any" && timeValue) {
+    const dep = leg.departure;
+    if (!dep) return false;
+    const d = new Date(dep);
+    const depMinutes = d.getHours() * 60 + d.getMinutes();
+    const [th, tm] = timeValue.split(":").map(Number);
+    const threshold = th * 60 + (tm || 0);
+    if (timeMode === "before" && depMinutes >= threshold) return false;
+    if (timeMode === "after" && depMinutes < threshold) return false;
+  }
+  return true;
+}
+
+async function apiSearchFlights(from, to, date, cabin, timeMode, timeValue, nonstopOnly){
+  const origin = await resolveAirport(from);
+  await sleep(350);
+  const destination = await resolveAirport(to);
+  await sleep(350);
+
+  let json = await fetchSearchFlights(origin, destination, date, cabin);
+  let itineraries = json && json.data && json.data.itineraries;
+
+  let attempts = 0;
+  while (attempts < 4 && (isIncomplete(json) || !itineraries || !itineraries.length)) {
+    await sleep(1200);
+    json = await fetchSearchFlights(origin, destination, date, cabin);
+    itineraries = json && json.data && json.data.itineraries;
+    attempts++;
+  }
+
+  if (!itineraries || !itineraries.length) throw new Error("No " + cabin + " flights found for this route");
+
+  const hasFilters = nonstopOnly || (timeMode && timeMode !== "any");
+  let pool = itineraries.filter(it => matchesFilters(it, timeMode, timeValue, nonstopOnly));
+
+  if (hasFilters) {
+    attempts = 0;
+    while (!pool.length && attempts < 5 && isIncomplete(json)) {
+      await sleep(1200);
+      json = await fetchSearchFlights(origin, destination, date, cabin);
+      itineraries = json && json.data && json.data.itineraries;
+      pool = (itineraries || []).filter(it => matchesFilters(it, timeMode, timeValue, nonstopOnly));
+      attempts++;
+    }
+    if (!pool.length) {
+      const summary = (itineraries || []).map(it => {
+        const leg = it.legs && it.legs[0];
+        return { stopCount: leg && leg.stopCount, departure: leg && leg.departure, price: it.price && it.price.raw };
+      });
+      console.warn("Air Scraper: " + summary.length + " itineraries returned for " + from + "\u2192" + to + " (" + cabin + ", market=" + currentMarket + "/" + currentCountry + "), none matched filters (nonstop=" + nonstopOnly + ", timeMode=" + timeMode + " " + timeValue + "). Raw context status: " + (json && json.data && json.data.context && json.data.context.status));
+      console.table(summary);
+      console.warn("Copy-paste this line if reporting the issue: " + JSON.stringify(summary));
+      const bits = [];
+      if (nonstopOnly) bits.push("nonstop");
+      if (timeMode && timeMode !== "any") bits.push("departing " + timeMode + " " + timeValue);
+      throw new Error("No " + cabin + " flights found (" + bits.join(", ") + ") for this route \u2014 see console for the raw itinerary summary");
+    }
+  }
+
+  const best = pool.reduce((a,b) => (a.price && a.price.raw) <= (b.price && b.price.raw) ? a : b);
+  const leg = best.legs && best.legs[0];
+  const carrier = leg && leg.carriers && leg.carriers.marketing && leg.carriers.marketing[0];
+  return {
+    result: {
+      airline: (carrier && carrier.name) || "Unknown carrier",
+      stops: leg ? leg.stopCount : 0,
+      cabin: cabin,
+      duration: minutesToDuration(leg && leg.durationInMinutes),
+      depart: timeFromISO(leg && leg.departure)
+    },
+    price: Math.round(best.price.raw)
+  };
+}
+
+function cryptoId(){ return Math.random().toString(36).slice(2,9); }
+
+function hashStr(s){
+  let h = 0;
+  for (let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) | 0; }
+  return Math.abs(h);
+}
+
+function basePrice(from,to,date,cabin){
+  const seed = hashStr((from||"")+(to||"")+(date||""));
+  const eco = 60 + (seed % 340);
+  return cabin === "business" ? Math.round(eco * (3.2 + (seed%10)/20)) : eco;
+}
+
+function jitterPrice(prev){
+  const drift = (Math.random()-0.5) * 0.16;
+  const next = Math.max(29, Math.round(prev * (1+drift)));
+  return next;
+}
+
+function randomFlightDetails(from,to,date,cabin,timeMode,timeValue,nonstopOnly){
+  const seed = hashStr(from+to+date+"x");
+  const airline = AIRLINES[seed % AIRLINES.length];
+  const stops = nonstopOnly ? 0 : (seed % 5 === 0 ? 1 : (seed % 11 === 0 ? 2 : 0));
+  const durH = 1 + (seed % 9);
+  const durM = (seed*7) % 60;
+  let depH, depM;
+  if (timeMode && timeMode !== "any" && timeValue) {
+    const [th, tm] = timeValue.split(":").map(Number);
+    const threshold = th * 60 + (tm || 0);
+    let totalMin;
+    if (timeMode === "before") {
+      const span = Math.max(1, threshold);
+      totalMin = seed % span;
+    } else {
+      const span = Math.max(1, (24 * 60) - threshold - 1);
+      totalMin = threshold + 1 + (seed % span);
+    }
+    depH = Math.floor(totalMin / 60);
+    depM = totalMin % 60;
+  } else {
+    depH = 6 + (seed % 15);
+    depM = (seed*3) % 60;
+  }
+  return { airline, stops, cabin, duration: durH+"h "+String(durM).padStart(2,"0")+"m", depart: String(depH).padStart(2,"0")+":"+String(depM).padStart(2,"0") };
+}
+
+function fmtPrice(p){ return "\u20AC" + p; }
+
+function render(){
+  const rowsEl = document.getElementById("rows");
+  rowsEl.innerHTML = "";
+  flights.forEach((f, idx) => {
+    const row = document.createElement("div");
+    row.className = "row";
+
+    const canSearch = f.from.trim().length === 3 && f.to.trim().length === 3 && f.date;
+
+    row.innerHTML = `
+      <div class="row-top">
+        <div class="field from">
+          <label>From</label>
+          <input type="text" maxlength="3" placeholder="AMS" value="${f.from}" data-role="from" data-id="${f.id}">
+          <div class="airport-hint" id="hint-from-${f.id}">${airportHintText(f.from)}</div>
+        </div>
+        <div class="field to">
+          <div class="airport-pair">
+            <input type="text" maxlength="3" placeholder="LHR" value="${f.to}" data-role="to" data-id="${f.id}">
+            <button class="swap-btn" data-role="swap" data-id="${f.id}" title="Swap" aria-label="Swap airports">&#8646;</button>
+          </div>
+          <div class="airport-hint" id="hint-to-${f.id}">${airportHintText(f.to)}</div>
+        </div>
+        <div class="field date">
+          <label>Date</label>
+          <input type="date" value="${f.date}" data-role="date" data-id="${f.id}">
+        </div>
+        <div class="field cabin">
+          <label>Cabin</label>
+          <select class="cabin-select" data-role="cabin" data-id="${f.id}">
+            <option value="economy" ${f.cabin==='economy' ? 'selected' : ''}>Economy</option>
+            <option value="business" ${f.cabin==='business' ? 'selected' : ''}>Business</option>
+          </select>
+        </div>
+        <div class="field timewindow">
+          <label>Time</label>
+          <div class="time-filter-row">
+            <select class="cabin-select" data-role="timemode" data-id="${f.id}">
+              <option value="any" ${f.timeMode==='any' ? 'selected' : ''}>Any time</option>
+              <option value="before" ${f.timeMode==='before' ? 'selected' : ''}>Before</option>
+              <option value="after" ${f.timeMode==='after' ? 'selected' : ''}>After</option>
+            </select>
+            <input type="time" class="cabin-select time-value-input" data-role="timevalue" data-id="${f.id}" value="${f.timeValue || '12:00'}" ${f.timeMode==='any' ? 'disabled' : ''}>
+          </div>
+        </div>
+        <button class="search-btn" data-role="search" data-id="${f.id}" ${canSearch ? "" : "disabled"}>
+          ${f.status === "searching" ? "Searching\u2026" : (f.result ? "Search again" : "Search")}
+        </button>
+        <button class="remove-btn" data-role="remove" data-id="${f.id}" title="Remove" aria-label="Remove flight" ${flights.length<=1 ? "disabled style='visibility:hidden'" : ""}>&times;</button>
+      </div>
+      <div class="row-options">
+        <label class="nonstop-toggle">
+          <input type="checkbox" data-role="nonstop" data-id="${f.id}" ${f.nonstopOnly ? 'checked' : ''}>
+          Nonstop only
+        </label>
+        <input type="text" class="note-input" placeholder="Notitie (bv. richtprijs \u20AC500)" maxlength="80" value="${(f.note || "").replace(/"/g,"&quot;")}" data-role="note" data-id="${f.id}">
+      </div>
+      <div class="result ${f.status==='idle' ? '' : 'show'} ${f.status==='searching' ? 'pending' : ''}">
+        ${resultInner(f)}
+      </div>
+    `;
+    rowsEl.appendChild(row);
+  });
+
+  document.getElementById("addRowBtn").disabled = flights.length >= MAX_FLIGHTS;
+  const modeLabel = apiKey ? "live via Air Scraper" : "demo data, not live prices";
+  document.getElementById("footnote").textContent = flights.length + " of " + MAX_FLIGHTS + " flights \u00b7 " + modeLabel;
+
+  bindEvents();
+  saveFlights();
+}
+
+function resultInner(f){
+  if (f.status === "idle") return "";
+  if (f.status === "searching") {
+    return `<div class="status-line searching">Searching ${f.from} &rarr; ${f.to}\u2026</div><div class="r-content"><div class="airline">Checking fares</div></div>${extraInner(f)}`;
+  }
+  if (f.status === "error") {
+    return `<div class="status-line error">Couldn't fetch this route</div><div class="r-content"><div class="flight-meta">${f.errorMsg || "Something went wrong."}</div></div>
+      <div style="margin-top:12px;text-align:right;">
+        <button class="check-btn" data-role="recheck" data-id="${f.id}">Try again</button>
+      </div>
+      ${extraInner(f)}`;
+  }
+  const r = f.result;
+  const last = f.history[f.history.length-1];
+  const prev = f.history.length>1 ? f.history[f.history.length-2] : null;
+  let deltaHtml = "";
+  if (prev !== null){
+    const diff = last - prev;
+    if (diff < 0) deltaHtml = `<span class="delta down">&darr; \u20AC${Math.abs(diff)} since last check</span>`;
+    else if (diff > 0) deltaHtml = `<span class="delta up">&uarr; \u20AC${diff} since last check</span>`;
+    else deltaHtml = `<span class="delta flat">No change</span>`;
+  }
+  const maxH = Math.max(...f.history);
+  const minH = Math.min(...f.history);
+  const range = Math.max(1, maxH - minH);
+  const bars = f.history.map(p => {
+    const h = 6 + Math.round(((p-minH)/range) * 18);
+    return `<div class="bar" style="height:${h}px" title="${fmtPrice(p)}"></div>`;
+  }).join("");
+
+  return `
+    <div class="status-line">Best fare found</div>
+    <div class="r-content">
+      <div class="r-left">
+        <div class="airline">${r.airline}</div>
+        <div class="flight-meta">Departs ${r.depart} &middot; ${r.duration} &middot;</div>
+        <div class="stops-badge">${r.stops===0 ? "Nonstop" : r.stops+" stop"+(r.stops>1?"s":"")}</div>
+        <div class="cabin-tag">${r.cabin === "business" ? "Business" : "Economy"}</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <div class="price-flap"><span class="price-inner ${f.justFlipped ? 'flipping' : ''}">${fmtPrice(last)}</span></div>
+        ${deltaHtml}
+      </div>
+    </div>
+    <div class="history">${bars}</div>
+    <div style="margin-top:12px;text-align:right;">
+      <button class="check-btn" data-role="recheck" data-id="${f.id}">Check price again</button>
+    </div>
+    ${extraInner(f)}
+  `;
+}
+
+const EXTRA_OFFSETS = [14, 45];
+
+function datePlusDays(days){
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0,10);
+}
+
+function formatNL(dateStr){
+  if (!dateStr) return "";
+  const [y,m,d] = dateStr.split("-");
+  return d + "-" + m + "-" + y;
+}
+
+function extraBlockHTML(f, days){
+  const ex = (f.extras && f.extras[days]) || { status: "idle" };
+  if (!ex.status || ex.status === "idle") return "";
+  const dateLabel = formatNL(ex.date || datePlusDays(days));
+
+  if (ex.status === "searching") {
+    return `<div class="extra-check">
+      <div class="extra-label">Over ${days} dagen (${dateLabel})</div>
+      <div class="extra-content"><span class="extra-left">Zoeken\u2026</span></div>
+    </div>`;
+  }
+  if (ex.status === "error") {
+    return `<div class="extra-check">
+      <div class="extra-label">Over ${days} dagen (${dateLabel})</div>
+      <div class="extra-content"><span class="extra-left">${ex.errorMsg || "Niets gevonden"}</span></div>
+    </div>`;
+  }
+
+  const er = ex.result;
+  const eLast = (ex.history || [])[(ex.history || []).length - 1];
+  return `<div class="extra-check">
+    <div class="extra-label">Over ${days} dagen (${dateLabel})</div>
+    <div class="extra-content">
+      <span class="extra-left">
+        <strong>${er.airline}</strong> &middot; vertrek ${er.depart} &middot; ${er.duration} &middot;
+        ${er.stops===0 ? "Nonstop" : er.stops+" tussenstop"+(er.stops>1?"pen":"")}
+      </span>
+      <span class="extra-price">${fmtPrice(eLast)}</span>
+    </div>
+  </div>`;
+}
+
+function extraInner(f){
+  return EXTRA_OFFSETS.map(days => extraBlockHTML(f, days)).join("");
+}
+
+function bindEvents(){
+  document.querySelectorAll('[data-role="from"], [data-role="to"]').forEach(el=>{
+    el.addEventListener('input', e=>{
+      const id = e.target.dataset.id;
+      const role = e.target.dataset.role;
+      const f = flights.find(x=>x.id===id);
+      f[role] = e.target.value.toUpperCase().slice(0,3);
+      e.target.value = f[role];
+      updateSearchButtonState(id);
+      updateAirportHintDOM(id, role);
+      saveFlights();
+    });
+    el.addEventListener('blur', async e=>{
+      const id = e.target.dataset.id;
+      const role = e.target.dataset.role;
+      const f = flights.find(x=>x.id===id);
+      const code = f[role];
+      if (code.length === 3 && apiKey && !airportHintText(code)){
+        try {
+          await resolveAirport(code);
+          updateAirportHintDOM(id, role);
+        } catch(err) {
+          const hintEl = document.getElementById("hint-" + role + "-" + id);
+          if (hintEl) hintEl.textContent = "Unrecognized code";
+        }
+      }
+    });
+  });
+  document.querySelectorAll('[data-role="date"]').forEach(el=>{
+    el.addEventListener('input', e=>{
+      const id = e.target.dataset.id;
+      const f = flights.find(x=>x.id===id);
+      f.date = e.target.value;
+      updateSearchButtonState(id);
+      saveFlights();
+    });
+  });
+  document.querySelectorAll('[data-role="cabin"]').forEach(el=>{
+    el.addEventListener('change', e=>{
+      const id = e.target.dataset.id;
+      const f = flights.find(x=>x.id===id);
+      f.cabin = e.target.value;
+      saveFlights();
+    });
+  });
+  document.querySelectorAll('[data-role="timemode"]').forEach(el=>{
+    el.addEventListener('change', e=>{
+      const id = e.target.dataset.id;
+      const f = flights.find(x=>x.id===id);
+      f.timeMode = e.target.value;
+      const timeInput = document.querySelector(`[data-role="timevalue"][data-id="${id}"]`);
+      if (timeInput) timeInput.disabled = (f.timeMode === "any");
+      saveFlights();
+    });
+  });
+  document.querySelectorAll('[data-role="timevalue"]').forEach(el=>{
+    el.addEventListener('input', e=>{
+      const id = e.target.dataset.id;
+      const f = flights.find(x=>x.id===id);
+      f.timeValue = e.target.value;
+      saveFlights();
+    });
+  });
+  document.querySelectorAll('[data-role="nonstop"]').forEach(el=>{
+    el.addEventListener('change', e=>{
+      const id = e.target.dataset.id;
+      const f = flights.find(x=>x.id===id);
+      f.nonstopOnly = e.target.checked;
+      saveFlights();
+    });
+  });
+  document.querySelectorAll('[data-role="note"]').forEach(el=>{
+    el.addEventListener('input', e=>{
+      const id = e.target.dataset.id;
+      const f = flights.find(x=>x.id===id);
+      f.note = e.target.value;
+      saveFlights();
+    });
+  });
+  document.querySelectorAll('[data-role="swap"]').forEach(el=>{
+    el.addEventListener('click', e=>{
+      const id = e.target.closest('[data-id]').dataset.id;
+      const f = flights.find(x=>x.id===id);
+      [f.from, f.to] = [f.to, f.from];
+      render();
+    });
+  });
+  document.querySelectorAll('[data-role="search"]').forEach(el=>{
+    el.addEventListener('click', e=>{
+      const id = e.target.dataset.id;
+      runSearch(id);
+    });
+  });
+  document.querySelectorAll('[data-role="recheck"]').forEach(el=>{
+    el.addEventListener('click', e=>{
+      const id = e.target.dataset.id;
+      recheckPrice(id);
+    });
+  });
+  document.querySelectorAll('[data-role="remove"]').forEach(el=>{
+    el.addEventListener('click', e=>{
+      const id = e.target.closest('[data-id]').dataset.id;
+      flights = flights.filter(x=>x.id!==id);
+      render();
+    });
+  });
+}
+
+function updateSearchButtonState(id){
+  const f = flights.find(x=>x.id===id);
+  const btn = document.querySelector(`[data-role="search"][data-id="${id}"]`);
+  if (!btn) return;
+  const canSearch = f.from.trim().length===3 && f.to.trim().length===3 && f.date;
+  btn.disabled = !canSearch;
+}
+
+async function runExtraSearchFor(id, days){
+  const f = flights.find(x=>x.id===id);
+  if (!f) return;
+  const canSearch = f.from.trim().length===3 && f.to.trim().length===3;
+  if (!canSearch) return;
+
+  if (!f.extras) f.extras = {};
+  const extraDate = datePlusDays(days);
+  f.extras[days] = { status: "searching", date: extraDate, result: null, history: [], errorMsg: "" };
+  render();
+
+  if (apiKey) {
+    try {
+      const { result, price } = await apiSearchFlights(f.from, f.to, extraDate, f.cabin, f.timeMode, f.timeValue, f.nonstopOnly);
+      f.extras[days] = { status: "found", date: extraDate, result: result, history: [price], errorMsg: "" };
+      render();
+    } catch (err) {
+      f.extras[days] = { status: "error", date: extraDate, result: null, history: [], errorMsg: err.message || "Niets gevonden" };
+      render();
+    }
+    return;
+  }
+
+  const delay = 700 + Math.random()*700;
+  setTimeout(()=>{
+    const details = randomFlightDetails(f.from, f.to, extraDate, f.cabin, f.timeMode, f.timeValue, f.nonstopOnly);
+    const price = basePrice(f.from, f.to, extraDate, f.cabin);
+    f.extras[days] = { status: "found", date: extraDate, result: details, history: [price], errorMsg: "" };
+    render();
+  }, delay);
+}
+
+function runExtraSearch(id){
+  EXTRA_OFFSETS.forEach(days => runExtraSearchFor(id, days));
+}
+
+async function runSearch(id){
+  const f = flights.find(x=>x.id===id);
+  f.status = "searching";
+  render();
+  runExtraSearch(id);
+
+  if (apiKey) {
+    try {
+      const { result, price } = await apiSearchFlights(f.from, f.to, f.date, f.cabin, f.timeMode, f.timeValue, f.nonstopOnly);
+      f.result = result;
+      f.history = [price];
+      f.status = "found";
+      f.justFlipped = true;
+      render();
+      setTimeout(()=>{ f.justFlipped=false; }, 550);
+    } catch (err) {
+      f.status = "error";
+      f.errorMsg = err.message || "Request failed";
+      render();
+    }
+    return;
+  }
+
+  const delay = 700 + Math.random()*700;
+  setTimeout(()=>{
+    const details = randomFlightDetails(f.from, f.to, f.date, f.cabin, f.timeMode, f.timeValue, f.nonstopOnly);
+    const price = basePrice(f.from, f.to, f.date, f.cabin);
+    f.result = details;
+    f.history = [price];
+    f.status = "found";
+    f.justFlipped = true;
+    render();
+    setTimeout(()=>{ f.justFlipped=false; }, 550);
+  }, delay);
+}
+
+async function recheckPrice(id){
+  const f = flights.find(x=>x.id===id);
+
+  if (f.status === "error") {
+    return runSearch(id);
+  }
+
+  runExtraSearch(id);
+
+  if (apiKey) {
+    f.status = "searching";
+    render();
+    try {
+      const { result, price } = await apiSearchFlights(f.from, f.to, f.date, f.cabin, f.timeMode, f.timeValue, f.nonstopOnly);
+      f.result = result;
+      f.history.push(price);
+      if (f.history.length > 8) f.history.shift();
+      f.status = "found";
+      f.justFlipped = true;
+      render();
+      setTimeout(()=>{ f.justFlipped=false; }, 550);
+    } catch (err) {
+      f.status = "error";
+      f.errorMsg = err.message || "Request failed";
+      render();
+    }
+    return;
+  }
+
+  const last = f.history[f.history.length-1];
+  const next = jitterPrice(last);
+  f.history.push(next);
+  if (f.history.length > 8) f.history.shift();
+  f.justFlipped = true;
+  render();
+  setTimeout(()=>{ f.justFlipped=false; }, 550);
+}
+
+document.getElementById("addRowBtn").addEventListener('click', ()=>{
+  if (flights.length >= MAX_FLIGHTS) return;
+  flights.push({ id: cryptoId(), from:"", to:"", date:"", cabin:"economy", timeMode:"any", timeValue:"12:00", nonstopOnly:false, note:"", result:null, status:"idle", history:[] });
+  render();
+});
+
+function refreshAllAirportHints(){
+  if (!apiKey) return;
+  flights.forEach(f => {
+    ["from","to"].forEach(async role => {
+      const code = f[role];
+      if (code && code.length === 3 && !airportHintText(code)){
+        try { await resolveAirport(code); updateAirportHintDOM(f.id, role); }
+        catch(err) {
+          const hintEl = document.getElementById("hint-" + role + "-" + f.id);
+          if (hintEl) hintEl.textContent = "Unrecognized code";
+        }
+      }
+    });
+  });
+}
+
+loadSavedState();
+render();
+refreshAllAirportHints();
+</script>
+</body>
+</html>

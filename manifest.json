@@ -1,0 +1,13 @@
+{
+  "name": "Flight Watch",
+  "short_name": "Flight Watch",
+  "description": "Track up to 6 flight routes with live Air Scraper pricing",
+  "start_url": "./flight-price-tracker.html",
+  "display": "standalone",
+  "background_color": "#E4F1FB",
+  "theme_color": "#122B40",
+  "icons": [
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-1024.png", "sizes": "1024x1024", "type": "image/png" }
+  ]
+}
