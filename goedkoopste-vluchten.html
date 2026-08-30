@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Goedkoopste vluchten — vertrekbord</title>
-<link rel="departures-icon" href="departures-icon.png">
+<link rel="icon" href="data:,">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Archivo:wght@500;600;700;800&display=swap');
 
@@ -292,6 +292,18 @@
       <summary>Luchthavens die doorzocht worden op dit continent (klik om aan/uit te zetten)</summary>
       <div class="airport-chips" id="chips"></div>
       <div class="hint" style="margin-top:10px;">Elke luchthaven kost minimaal 1 API-call (soms 2, als de luchthaven nog niet eerder is opgezocht). De gratis BASIC-plan van RapidAPI geeft je 100 calls/maand — zet minder luchthavens aan als je die limiet wil sparen.</div>
+
+      <div class="grid" style="margin-top:16px;">
+        <div class="field">
+          <label for="extraAirport1">Extra luchthaven 1 (optioneel)</label>
+          <input id="extraAirport1" type="text" placeholder="bv. OSL of stadnaam">
+        </div>
+        <div class="field">
+          <label for="extraAirport2">Extra luchthaven 2 (optioneel)</label>
+          <input id="extraAirport2" type="text" placeholder="bv. code of stadnaam">
+        </div>
+      </div>
+      <div class="hint">Deze worden extra meegezocht, los van het gekozen continent — handig voor een losse goedkope hub die niet in het rijtje hierboven staat.</div>
     </details>
 
     <button class="primary" id="searchBtn">Zoek de 5 goedkoopste luchthavens</button>
@@ -420,7 +432,9 @@ function setProgress(pct) {
 
 const airportCache = new Map(); // query -> {skyId, entityId, name}
 
-async function apiGet(path, params) {
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function apiGet(path, params, attempt = 1) {
   const key = apikeyInput.value.trim();
   if (!key) throw new Error('Vul eerst je RapidAPI-sleutel in.');
   const url = new URL(`https://${HOST}${path}`);
@@ -429,6 +443,11 @@ async function apiGet(path, params) {
     headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': HOST }
   });
   if (!res.ok) {
+    // tijdelijke fouten (rate limit / server-issues) automatisch één keer opnieuw proberen
+    if ((res.status === 429 || res.status >= 500) && attempt < 3) {
+      await sleep(700 * attempt);
+      return apiGet(path, params, attempt + 1);
+    }
     let detail = '';
     try { detail = (await res.text()).slice(0,200); } catch(e){}
     throw new Error(`API gaf status ${res.status} terug voor ${path}. ${detail}`);
@@ -493,11 +512,13 @@ async function searchOneOrigin(originQuery, cityName, destResolved, date, cabin,
   const json = await apiGet('/api/v1/flights/searchFlights', params);
   const itins = json?.data?.itineraries;
   const best = cheapestItinerary(itins);
-  if (!best) return { code: originQuery, city: cityName, price: null };
+  const displayCode = origin.skyId || originQuery;
+  const displayCity = cityName || origin.name;
+  if (!best) return { code: displayCode, city: displayCity, price: null, reason: 'geen vluchten gevonden voor deze datum/klasse' };
   const leg = best.legs?.[0];
   return {
-    code: originQuery,
-    city: cityName,
+    code: displayCode,
+    city: displayCity,
     price: best.price.raw,
     priceFormatted: best.price.formatted,
     airline: leg?.carriers?.marketing?.[0]?.name || '—',
@@ -535,7 +556,8 @@ function renderResults(list, destinationLabel, tripTypeUsed) {
 
   let note = '';
   if (failed.length) {
-    note = `<div class="empty-note">Geen resultaat voor: ${failed.map(f=>f.code).join(', ')}.</div>`;
+    const lines = failed.map(f => `${f.code} (${f.city}): ${f.reason || 'onbekende fout'}`).join('<br>');
+    note = `<div class="empty-note">Geen prijs voor:<br>${lines}</div>`;
   }
 
   resultsEl.innerHTML = `
@@ -553,7 +575,10 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
   const returnDate = tripType === 'return' ? document.getElementById('returnDate').value : null;
   const cabin = document.getElementById('cabin').value;
   const continent = continentSel.value;
-  const airports = CONTINENTS[continent].filter(([code]) => activeAirports.has(code));
+  const extra1 = document.getElementById('extraAirport1').value.trim();
+  const extra2 = document.getElementById('extraAirport2').value.trim();
+  const extras = [extra1, extra2].filter(Boolean).map(q => [q, null]);
+  const airports = [...CONTINENTS[continent].filter(([code]) => activeAirports.has(code)), ...extras];
 
   if (!destQuery) { setStatus('Vul een bestemming in.', true); return; }
   if (!date) { setStatus('Kies een datum.', true); return; }
@@ -581,7 +606,7 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
         const r = await searchOneOrigin(code, city, dest, date, cabin, returnDate);
         results.push(r);
       } catch (e) {
-        results.push({ code, city, price: null });
+        results.push({ code, city, price: null, reason: e.message });
         console.warn(`Fout bij ${code}:`, e.message);
       }
     }

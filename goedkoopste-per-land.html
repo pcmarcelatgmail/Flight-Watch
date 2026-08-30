@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Goedkoopste aankomstluchthavens — aankomstbord</title>
-<link rel="arrivals-icon" href="arrivals-icon.png">
+<link rel="icon" href="data:,">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Archivo:wght@500;600;700;800&display=swap');
 
@@ -294,6 +294,18 @@
       </div>
     </div>
 
+    <div class="grid" style="margin-bottom:4px;">
+      <div class="field">
+        <label for="extraAirport1">Extra luchthaven 1 (optioneel)</label>
+        <input id="extraAirport1" type="text" placeholder="bv. code of stadnaam">
+      </div>
+      <div class="field">
+        <label for="extraAirport2">Extra luchthaven 2 (optioneel)</label>
+        <input id="extraAirport2" type="text" placeholder="bv. code of stadnaam">
+      </div>
+    </div>
+    <div class="hint" style="margin-bottom:14px;">Wordt toegevoegd naast de luchthavens die automatisch voor het land worden gevonden — handig als een specifieke luchthaven niet in de suggesties zit.</div>
+
     <button class="secondary" id="lookupBtn">Zoek luchthavens in dit land</button>
     <div id="lookupStatus"></div>
 
@@ -375,7 +387,9 @@ function setProgress(pct) {
 
 const airportCache = new Map(); // query -> {skyId, entityId, name}
 
-async function apiGet(path, params) {
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function apiGet(path, params, attempt = 1) {
   const key = apikeyInput.value.trim();
   if (!key) throw new Error('Vul eerst je RapidAPI-sleutel in.');
   const url = new URL(`https://${HOST}${path}`);
@@ -384,6 +398,10 @@ async function apiGet(path, params) {
     headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': HOST }
   });
   if (!res.ok) {
+    if ((res.status === 429 || res.status >= 500) && attempt < 3) {
+      await sleep(700 * attempt);
+      return apiGet(path, params, attempt + 1);
+    }
     let detail = '';
     try { detail = (await res.text()).slice(0,200); } catch(e){}
     throw new Error(`API gaf status ${res.status} terug voor ${path}. ${detail}`);
@@ -426,32 +444,59 @@ let activeAirports = new Set();
 
 lookupBtn.addEventListener('click', async () => {
   const country = document.getElementById('country').value.trim();
-  if (!country) { setStatus(lookupStatusEl, 'Vul eerst een land in.', true); return; }
+  const extra1 = document.getElementById('extraAirport1').value.trim();
+  const extra2 = document.getElementById('extraAirport2').value.trim();
+  const extraQueries = [extra1, extra2].filter(Boolean);
+
+  if (!country && !extraQueries.length) {
+    setStatus(lookupStatusEl, 'Vul een land in, of minstens één extra luchthaven.', true);
+    return;
+  }
 
   lookupBtn.disabled = true;
   searchBtn.disabled = true;
   chipsBox.innerHTML = '';
   chipsHint.style.display = 'none';
   resultsEl.innerHTML = '';
-  setStatus(lookupStatusEl, `Luchthavens opzoeken in "${country}"...`);
+
+  const found = []; // {skyId, entityId, code, name}
+  const seenCodes = new Set();
+  const problems = [];
 
   try {
-    const json = await apiGet('/api/v1/flights/searchAirport', { query: country, locale: 'en-US' });
-    const entries = (json?.data || []).slice(0, MAX_AIRPORTS);
-    if (!entries.length) {
-      setStatus(lookupStatusEl, `Geen luchthavens gevonden voor "${country}".`, true);
-      return;
+    if (country) {
+      setStatus(lookupStatusEl, `Luchthavens opzoeken in "${country}"...`);
+      const json = await apiGet('/api/v1/flights/searchAirport', { query: country, locale: 'en-US' });
+      const entries = (json?.data || []).slice(0, MAX_AIRPORTS);
+      entries.forEach(e => {
+        const skyId = e.skyId || e.navigation?.relevantFlightParams?.skyId;
+        const entityId = e.entityId || e.navigation?.entityId;
+        const code = e.navigation?.relevantFlightParams?.skyId || e.skyId || '—';
+        const name = e.presentation?.suggestionTitle || e.presentation?.title || country;
+        if (skyId && entityId && !seenCodes.has(code)) {
+          seenCodes.add(code);
+          found.push({ skyId, entityId, code, name });
+        }
+      });
+      if (!found.length) problems.push(`Geen luchthavens gevonden voor "${country}".`);
     }
-    countryAirports = entries.map(e => {
-      const skyId = e.skyId || e.navigation?.relevantFlightParams?.skyId;
-      const entityId = e.entityId || e.navigation?.entityId;
-      const code = e.navigation?.relevantFlightParams?.skyId || e.skyId || '—';
-      const name = e.presentation?.suggestionTitle || e.presentation?.title || country;
-      return { skyId, entityId, code, name };
-    }).filter(a => a.skyId && a.entityId);
 
+    for (const q of extraQueries) {
+      try {
+        const resolved = await resolveAirport(q);
+        const code = resolved.skyId || q;
+        if (!seenCodes.has(code)) {
+          seenCodes.add(code);
+          found.push({ skyId: resolved.skyId, entityId: resolved.entityId, code, name: resolved.name });
+        }
+      } catch (e) {
+        problems.push(`"${q}": ${e.message}`);
+      }
+    }
+
+    countryAirports = found;
     if (!countryAirports.length) {
-      setStatus(lookupStatusEl, `Kon geen bruikbare luchthavengegevens vinden voor "${country}".`, true);
+      setStatus(lookupStatusEl, problems.join('<br>') || 'Kon geen bruikbare luchthavengegevens vinden.', true);
       return;
     }
 
@@ -468,7 +513,10 @@ lookupBtn.addEventListener('click', async () => {
       chipsBox.appendChild(chip);
     });
     chipsHint.style.display = 'block';
-    setStatus(lookupStatusEl, `${countryAirports.length} luchthaven(s)/gebied(en) gevonden voor "${country}". Vink uit wat je niet wil meenemen en klik daarna op zoeken.`);
+    const label = country ? `voor "${country}"` : '';
+    let statusMsg = `${countryAirports.length} luchthaven(s)/gebied(en) gevonden ${label}. Vink uit wat je niet wil meenemen en klik daarna op zoeken.`;
+    if (problems.length) statusMsg += `<br><span class="err">${problems.join('<br>')}</span>`;
+    setStatus(lookupStatusEl, statusMsg);
     searchBtn.disabled = false;
   } catch (e) {
     setStatus(lookupStatusEl, e.message, true);
@@ -504,7 +552,7 @@ async function searchOneDestination(origin, dest, date, cabin, returnDate) {
   const json = await apiGet('/api/v1/flights/searchFlights', params);
   const itins = json?.data?.itineraries;
   const best = cheapestItinerary(itins);
-  if (!best) return { code: dest.code, city: dest.name, price: null };
+  if (!best) return { code: dest.code, city: dest.name, price: null, reason: 'geen vluchten gevonden voor deze datum/klasse' };
   const leg = best.legs?.[0];
   return {
     code: dest.code,
@@ -545,7 +593,8 @@ function renderResults(list, originLabel, tripTypeUsed) {
 
   let note = '';
   if (failed.length) {
-    note = `<div class="empty-note">Geen resultaat voor: ${failed.map(f=>f.code).join(', ')}.</div>`;
+    const lines = failed.map(f => `${f.code} (${f.city}): ${f.reason || 'onbekende fout'}`).join('<br>');
+    note = `<div class="empty-note">Geen prijs voor:<br>${lines}</div>`;
   }
 
   resultsEl.innerHTML = `
@@ -589,7 +638,7 @@ searchBtn.addEventListener('click', async () => {
         const r = await searchOneDestination(origin, dest, date, cabin, returnDate);
         results.push(r);
       } catch (e) {
-        results.push({ code: dest.code, city: dest.name, price: null });
+        results.push({ code: dest.code, city: dest.name, price: null, reason: e.message });
         console.warn(`Fout bij ${dest.code}:`, e.message);
       }
     }
