@@ -718,8 +718,26 @@ async function refreshHint(id){
   el.addEventListener("blur", () => refreshHint(id));
 });
 
+function syncDateBounds(){
+  const d1 = document.getElementById("date1");
+  const d2 = document.getElementById("date2");
+  const d3 = document.getElementById("date3");
+
+  // Datum 2 kan niet vóór datum 1 liggen, datum 3 niet vóór datum 2.
+  // De browser opent een leeg datumveld in de maand van deze min-waarde.
+  d2.min = d1.value || "";
+  d3.min = d2.value || d1.value || "";
+
+  // Waarden die door een wijziging ongeldig zijn geworden leegmaken.
+  if (d2.min && d2.value && d2.value < d2.min) d2.value = "";
+  if (d3.min && d3.value && d3.value < d3.min) d3.value = "";
+}
+
 ["date1","date2","date3"].forEach(id => {
-  document.getElementById(id).addEventListener("input", saveForm);
+  document.getElementById(id).addEventListener("input", () => {
+    syncDateBounds();
+    saveForm();
+  });
 });
 
 document.getElementById("apiKeyInput").addEventListener("input", e => {
@@ -750,6 +768,7 @@ document.getElementById("clearBtn").addEventListener("click", () => {
   s.classList.remove("live");
   ["city1","city2","date1","date2","date3"].forEach(id => document.getElementById(id).value = "");
   ["hint-city1","hint-city2"].forEach(id => document.getElementById(id).textContent = "");
+  syncDateBounds();
   results = {};
   midLeg = null;
   updateLegLabels();
@@ -762,6 +781,7 @@ document.getElementById("searchBtn").addEventListener("click", runAll);
 
 loadSaved();
 updateLegLabels();
+syncDateBounds();
 renderTable();
 refreshHint("city1");
 refreshHint("city2");
