@@ -6,10 +6,12 @@
 <title>Flight watch</title>
 
 <!-- iOS "Add to Home Screen" support -->
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Flight Watch">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23122B40'/%3E%3Cpath d='M16 5 L21.5 22 L16 18.5 L10.5 22 Z' fill='%23B9790C'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#122B40">
 <style>
@@ -461,7 +463,7 @@
   <header>
     <p class="eyebrow">Departures &middot; live watch</p>
     <h1>Flight watch</h1>
-    <p>Set up to six routes, choose economy or business, run a search, and keep an eye on how the price moves each time you check back.</p>
+    <p>Set up to ten routes, choose economy or business, run a search, and keep an eye on how the price moves each time you check back.</p>
   </header>
 
   <div class="api-panel">
@@ -531,7 +533,7 @@
 </datalist>
 
 <script>
-const MAX_FLIGHTS = 6;
+const MAX_FLIGHTS = 10;
 const AIRLINES = ["KLM","Lufthansa","Air France","British Airways","easyJet","Ryanair","Delta","United","Turkish Airlines","Vueling","Transavia","Iberia","SWISS","Finnair","TAP Air Portugal"];
 const API_HOST = "sky-scrapper.p.rapidapi.com";
 const airportCache = {};
